@@ -1,4 +1,5 @@
 # ECE 3610 Final Project: FPGA Chladni Plate Synthesizer & Visualizer
+**Authors:** Isaac Venegas Macevschi & Soledad Vanorden
 
 A real-time audio-visual Chladni plate synthesizer implemented in VHDL on the **Digilent Basys 3 (Artix-7 FPGA)**. The system pairs a dual-mode audio synthesizer (built-in Song ROM playback or interactive UART frequency synthesis) with a real-time 2D damped wave solver (`64 × 64` grid) rendered as a live `640 × 480` heat map over VGA.
 
