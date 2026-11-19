@@ -97,9 +97,12 @@ architecture behavioral of waveChladniSolver is
                (cellY = to_unsigned(exciteY, gridBits));
     end function;
 
+    -- Difference equation is as followed:
+    -- u_{i,j}^{n+1} = u_{i,j}^n + (1 - gamma)*(u_{i,j}^n - u_{i,j}^{n-1}) + alpha * nabla^2(u_{i,j}^n) + S_{i,j}^n
+    -- where gamma = 2^(-dampingShift), alpha = 2^(-stiffnessShift) = (c * dt / dx)^2
     pure function solveWave(
         win         : window3x3Array;
-        prevVal     : signed(dataWidth - 1 downto 0);
+        prevVal     : signed(dataWidth - 1 downto 0);     -- u_{i,j}^{n-1}
         sample      : signed(15 downto 0);
         exciteOn    : boolean
     ) return signed is
@@ -110,19 +113,30 @@ architecture behavioral of waveChladniSolver is
         variable dampedVel   : signed(calcWidth - 1 downto 0);
         variable force       : signed(calcWidth - 1 downto 0);
     begin
+        -- u_{i,j}^n
         center    := resize(win(1)(1), calcWidth);
+
+        -- u_{i-1,j}^n + u_{i+1,j}^n + u_{i,j-1}^n + u_{i,j+1}^n
         neighbors := resize(win(0)(1), calcWidth) + resize(win(2)(1), calcWidth) +
                      resize(win(1)(0), calcWidth) + resize(win(1)(2), calcWidth);
+
+        -- nabla^2(u^n) = neighbors - 4 * u_{i,j}^n
         laplacian := neighbors - shift_left(center, 2);
+
+        -- v^n = u_{i,j}^n - u_{i,j}^{n-1}
         velocity  := center - resize(prevVal, calcWidth);
+
+        -- (1 - gamma) * v^n
         dampedVel := velocity - shift_right(velocity, dampingShift);
 
+        -- S_{i,j}^n (sample / 4 at exciter, 0 elsewhere)
         if exciteOn then
             force := resize(shift_right(sample, 2), calcWidth);
         else
             force := (others => '0');
         end if;
 
+        -- u_{i,j}^{n+1} = u^n + (1 - gamma)*v^n + alpha*nabla^2(u^n) + S^n
         return center + dampedVel + shift_right(laplacian, stiffnessShift) + force;
     end function;
 
